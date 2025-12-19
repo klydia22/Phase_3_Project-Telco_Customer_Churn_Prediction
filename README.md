@@ -3,15 +3,15 @@ Data Science Project predicting customer churn using Telco Customer Churn datase
 
 # **Project Overview**
 
-One of the most significant and persistent challenges faced by telecommunication Companies is Customer churn. It is really expensive  for businesses when a customer leaves, apart from incurring loses in terms of current revenue collection, the business also incurs additional costs for customer replacement.
+Customer Churn is one of the most significant and persistent challenges faced by telecommunication Companies, directly impacting long-term revenue and customer lifetime value. The project develops a data-driven churn prediction solution that identifies customers at risk of leaving and flag them in time for retention.
 
-This project is designed around business impact. The modeling approach prioritizes identifying as many true churners as possible, ensuring that customers who are at risk of leaving are flagged in time for retention.
-
-The project aims at strategizing on how the business will reduce revenue loss by minimizing missed churners through Recall-optimized predictive modeling.
+As opposed to optimizing for accuracy, the analysis is intentionally designed around business impact. The modeling approach prioritizes identifying as many true churners as possible, ensuring that the majority of the true churners are identified so that retention team can intervene proactively.
 
 # **Business Problem**
 
-Telecommunication market is highly competitive in that customers can easily switch service providers. While extensive amounts of customer data are collected, many organizations still struggle to convert the collected data into actionable insights that can be meaningful in reducing churn. The project therefore tries to address the lack of reliable data driven strategies that can identify customers who are about to churn. It is certain that when churners are missed; False Negatives, the company loses future revenue, making this type of error more costly than incorrectly flagging a loyal customer. The imbalance in business cost directly informs the modeling strategy adopted in this project.
+Telecommunication market is highly competitive in that customers can easily switch service providers. While extensive amounts of customer data are collected, many organizations still struggle to convert the collected data into actionable insights that can be meaningful in reducing churn. The project addresses the core business problem which is the lack of reliable data driven strategies that can identify customers who are about to churn. It is certain that when churners are missed; False Negatives, the company loses future revenue, making this type of error more costly than incorrectly flagging a loyal customer. 
+
+This imbalance in business cost directly informs the modeling strategy adopted in this project.
 
 # **Business Objective**
 
@@ -25,23 +25,7 @@ The primary objective of this project is to offer useful insights that can maxim
 
 ***4. Translate model outputs into clear, business-oriented recommendations***
 
-# ***Import Libraries***
-import pandas as pd
-import numpy as np
-
-# For modeling
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier, plot_tree
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, roc_auc_score, make_scorer
-from imblearn.over_sampling import SMOTE
-from imblearn.pipeline import Pipeline as ImbPipeline
-
-import matplotlib.pyplot as plt
+The primary Evaluation metric; Recall chosen to minimize costly missed churners.
 
 # **Dataset Description**
 
@@ -49,46 +33,12 @@ The analysis uses Telco Customer Churn dataset that contains detailed records of
 
 The dataset provides a realistic representation of customer behavior in the telecom industry and is well-suited for churn prediction activities.
 
-import pandas as pd
-import numpy as np
-
-df = pd.read_csv('Telco_Customer_Churn.csv')
-print(df.info())
-
-<class 'pandas.core.frame.DataFrame'>
-RangeIndex: 7043 entries, 0 to 7042
-Data columns (total 21 columns):
- #   Column            Non-Null Count  Dtype  
----  ------            --------------  -----  
- 0   customerID        7043 non-null   object 
- 1   gender            7043 non-null   object 
- 2   SeniorCitizen     7043 non-null   int64  
- 3   Partner           7043 non-null   object 
- 4   Dependents        7043 non-null   object 
- 5   tenure            7043 non-null   int64  
- 6   PhoneService      7043 non-null   object 
- 7   MultipleLines     7043 non-null   object 
- 8   InternetService   7043 non-null   object 
- 9   OnlineSecurity    7043 non-null   object 
- 10  OnlineBackup      7043 non-null   object 
- 11  DeviceProtection  7043 non-null   object 
- 12  TechSupport       7043 non-null   object 
- 13  StreamingTV       7043 non-null   object 
- 14  StreamingMovies   7043 non-null   object 
- 15  Contract          7043 non-null   object 
- 16  PaperlessBilling  7043 non-null   object 
- 17  PaymentMethod     7043 non-null   object 
- 18  MonthlyCharges    7043 non-null   float64
- 19  TotalCharges      7043 non-null   object 
- 20  Churn             7043 non-null   object 
-dtypes: float64(1), int64(2), object(18)
-memory usage: 1.1+ MB
 
 # **Data Preparation**
 
-Raw data most of the time contains inconstistencies and formatting issues that can negatively impact the performance of the model. This necessesitated the need for the data to undergo several preprocessing steps to ensure data quality and reliability. The following were undertaken:
+Most of the time raw data contains inconstistencies and formatting issues that can negatively impact the performance of the model. This necessesitated the need for the data to undergo several preprocessing steps to ensure data quality and reliability. The following were undertaken:
 
-***converted TotalCharges from a string format to numeric values to enable proper mathematical operations***
+***Converted TotalCharges from a string format to numeric values to enable proper mathematical operations***
 
 ***Handled blank strings and missing values to prevent downstream modeling errors***
 
@@ -98,21 +48,6 @@ Raw data most of the time contains inconstistencies and formatting issues that c
 
 The steps above ensured that the dataset was both clean and analytically sound before modeling.
 
-# Introduce missing values in TotalCharges, replicating the real dataset issue
-df['TotalCharges'] = df['TotalCharges'].astype(str)
-for i in np.random.choice(df.index, 11,replace=False) : # 11 is the usual number of missing values
-    df.loc[i, 'TotalCharges'] = ' '
-    
-# columns with empty strings
-# Convert TotalCharges to numeric, turning spaces into NaN
-df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
-
-# Fill the new NaNs 
-df['TotalCharges']= df['TotalCharges'].fillna(0)
-
-# Converting target variable to Binary (0 or 1)
-
-df['Churn_Binary'] = df['Churn'].apply(lambda x: 1 if x== 'Yes' else 0)
 
 # **Feature Engineering & Preprocessing**
 
@@ -128,20 +63,20 @@ A columnTransformer and Pipeline architecture was used so that all preprocessing
 
 # **Data Modeling**
 
-The project explored two complementary modeling techniques to balance interpretability and predictive power.
+The project explored two complementary modeling techniques to balance interpretability and predictive power. The techiniques applied were:
 
-# ***Logistic Regression***
+# ***1. Logistic Regression***
 
 This model served as the baseline model due to its transparency and ease of interpretation. Model coefficients provide clear insight into how each feature influences the likelihood of churn, making this model valuable for business communication.
 
-# ***Decision Tree Classifier***
+# ***2. Decision Tree Classifier***
 
 This model was introduced to capture non-linear relationships and interactions between features that Logistic Regression may miss. Decision Trees also provide intuitive feature importance metrics that align well with stakeholder expectations.
 
 Both models were tuned using GridSearchCV with Recall as the optimization objective.
 # **Handling Imbalance**
 
-The dataset exhibits a natural class imbalance with substantially more non-churners than churners. Without corrective measures, models tend to favor the majority class and underperform in identifying churrners. This issue was addressed by applying SMOTE (Synthetic Minority Oversampling Technique), oversampling was restricted to the training dataset to avoid information leakage, SMOTE was embedded directly within the modeling pipeline.
+The dataset exhibits a natural class imbalance with substantially more non-churners than churners. Without corrective measures, models tend to favor the majority class and underperform in identifying churrners. This issue was addressed by applying SMOTE (Synthetic Minority Oversampling Technique). Oversampling was restricted to the training dataset to avoid information leakage and SMOTE was embedded directly within the modeling pipeline.
 
 The strategy greatly improved the model's sensitivity to churn behavior.
 
@@ -199,3 +134,25 @@ Logistic regression assumes linear relationships between features and churn. SMO
 
 The model does not yet account for customer lifetime value or intervention costs.
 
+# **Future Work**
+
+There are several opportunities existing to further enhance the solution:
+
+  i). Experiment with ensemble models such as Gradient Boosting and XGBoost
+
+ii). Introduce cost-sensitive learning using customer lifetime value
+
+iii). Develop time-based churn prediction models to anticipate churn windows
+
+# **How to Run**
+
+Open the Jupyter Notebook included in this repository
+
+Install required dependencies: pandas, numpy, scikit-learn, imbalanced-learn
+
+Run all notebook cells sequentially from top to bottom
+
+# **Author**
+
+Lydiah Khisa
+Telecommunications Analytics Project
